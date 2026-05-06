@@ -13,3 +13,7 @@
 ## C++ Server muduo库
 
 4. https://github.com/chenshuo/muduo (服务器代码)
+
+## C++ HttpServer库
+
+5. https://github.com/BaiRong-NUC/HttpServer(必要)
