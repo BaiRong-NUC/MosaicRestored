@@ -1,1 +1,4 @@
 extensions/Self-Supervised-photo/*
+.env
+.env.*
+test/output/output.png
