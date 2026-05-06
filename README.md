@@ -1,4 +1,8 @@
-# 使用Self-Supervised-photo进行马赛克去除
+# 使用CodeFormer进行马赛克去除
+
+## 论文名称:Towards Robust Blind Face Restoration withCodebook Lookup Transformer
+
+## 论文地址:https://arxiv.org/pdf/2206.11253
 
 ## 本地运行
 
