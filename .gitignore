@@ -6,4 +6,4 @@ extensions/
 .env.*
 test/output/output.png
 __pycache__
-build/HttpServer/*
+build/*
