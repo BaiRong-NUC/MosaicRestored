@@ -1,4 +1,6 @@
 extensions/Self-Supervised-photo/*
+extensions/muduo
+extensions/CodeFormer
 .env
 .env.*
 test/output/output.png
