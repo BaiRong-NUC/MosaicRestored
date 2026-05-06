@@ -5,3 +5,4 @@ extensions/CodeFormer
 .env.*
 test/output/output.png
 __pycache__
+build/
