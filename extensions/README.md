@@ -7,3 +7,5 @@
 ## Towards Robust Blind Face Restoration withCodebook Lookup Transformer
 
 2. https://replicate.com/sczhou/codeformer
+
+3. https://github.com/sczhou/CodeFormer
