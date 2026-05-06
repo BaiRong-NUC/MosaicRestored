@@ -10,6 +10,7 @@ find_package(Threads REQUIRED)
 find_package(CURL REQUIRED)
 
 set(HTTP_SERVER_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/extensions/HttpServer)
+set(APP_OUTPUT_DIR ${CMAKE_BINARY_DIR}/app)
 
 file(GLOB_RECURSE HTTP_SERVER_SOURCES CONFIGURE_DEPENDS
     ${HTTP_SERVER_ROOT}/src/*.cpp
@@ -30,11 +31,19 @@ target_link_libraries(mosaic_server
 )
 
 set_target_properties(mosaic_server PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY ${APP_OUTPUT_DIR}
 )
 
-add_custom_command(TARGET mosaic_server POST_BUILD
+add_custom_target(copy_runtime_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_CURRENT_SOURCE_DIR}/app/wwwroot
             $<TARGET_FILE_DIR:mosaic_server>/wwwroot
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/app/serving
+            $<TARGET_FILE_DIR:mosaic_server>/serving
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/app/start_services.sh
+            $<TARGET_FILE_DIR:mosaic_server>/start_services.sh
+    COMMAND chmod +x $<TARGET_FILE_DIR:mosaic_server>/start_services.sh
 )
+add_dependencies(copy_runtime_assets mosaic_server)
