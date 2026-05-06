@@ -44,6 +44,16 @@ def ensure_replicate_token() -> None:
         raise RuntimeError("Missing REPLICATE_API_TOKEN in app/serving/.env")
 
 
+def image_suffix(image_bytes: bytes) -> str:
+    if image_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+        return ".png"
+    if image_bytes.startswith(b"\xff\xd8\xff"):
+        return ".jpg"
+    if image_bytes.startswith(b"RIFF") and image_bytes[8:12] == b"WEBP":
+        return ".webp"
+    return ".img"
+
+
 def generate_restored_image(
     image_bytes: bytes,
     upscale: int,
@@ -53,7 +63,7 @@ def generate_restored_image(
 ) -> tuple[bytes, str]:
     ensure_replicate_token()
 
-    with tempfile.NamedTemporaryFile(suffix=".jpg") as image_file:
+    with tempfile.NamedTemporaryFile(suffix=image_suffix(image_bytes)) as image_file:
         image_file.write(image_bytes)
         image_file.flush()
         image_file.seek(0)
