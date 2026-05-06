@@ -24,115 +24,132 @@
                 </div>
             </header>
 
-            <section class="workspace">
-                <aside class="panel controls" aria-label="Restore controls">
-                    <input id="fileInput" type="file" accept="image/*" hidden />
+            <section class="workspace" aria-label="Image restoration workspace">
+                <article class="panel image-panel input-panel">
+                    <header class="slot-header">
+                        <span>Input</span>
+                    </header>
 
-                    <button
-                        id="dropzone"
-                        class="dropzone"
-                        type="button"
-                        aria-label="Choose image"
-                    >
-                        <span class="drop-mark" aria-hidden="true"></span>
-                        <span class="drop-title">Choose image</span>
-                        <span class="drop-copy">Drop or browse</span>
-                    </button>
+                    <div id="inputBody" class="slot-body image-body input-body">
+                        <div class="placeholder">No image selected</div>
+                    </div>
 
-                    <p id="fileMeta" class="file-meta"></p>
-
-                    <div class="field-grid">
-                        <label class="field-label" for="upscale">Upscale</label>
-                        <select id="upscale">
-                            <option value="1">1x</option>
-                            <option value="2" selected>2x</option>
-                            <option value="3">3x</option>
-                            <option value="4">4x</option>
-                        </select>
-
-                        <div class="range-head">
-                            <label class="field-label" for="fidelity"
-                                >Fidelity</label
-                            >
-                            <span id="fidelityValue" class="range-value"
-                                >0.20</span
-                            >
-                        </div>
+                    <section class="controls" aria-label="Restore controls">
                         <input
-                            id="fidelity"
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value="0.2"
+                            id="fileInput"
+                            type="file"
+                            accept="image/*"
+                            hidden
                         />
-                    </div>
 
-                    <div class="toggle-row">
-                        <label class="toggle">
-                            <span>Face upsample</span>
-                            <input id="faceUpsample" type="checkbox" checked />
-                            <span class="switch" aria-hidden="true"></span>
-                        </label>
-                        <label class="toggle">
-                            <span>Background enhance</span>
-                            <input
-                                id="backgroundEnhance"
-                                type="checkbox"
-                                checked
-                            />
-                            <span class="switch" aria-hidden="true"></span>
-                        </label>
-                    </div>
-
-                    <div class="actions">
                         <button
-                            id="restoreButton"
-                            class="button primary"
+                            id="dropzone"
+                            class="dropzone"
                             type="button"
-                            disabled
+                            aria-label="Choose image"
                         >
-                            Restore
+                            <span class="drop-mark" aria-hidden="true"></span>
+                            <span class="drop-title">Choose image</span>
+                            <span class="drop-copy">Drop or browse</span>
                         </button>
-                        <button
-                            id="clearButton"
-                            class="button secondary"
-                            type="button"
-                            disabled
-                        >
-                            Clear
-                        </button>
-                    </div>
-                </aside>
 
-                <section class="panel viewer" aria-label="Image preview">
-                    <article class="image-slot">
-                        <header class="slot-header">
-                            <span>Input</span>
-                        </header>
-                        <div id="inputBody" class="slot-body">
-                            <div class="placeholder">No image selected</div>
+                        <p id="fileMeta" class="file-meta"></p>
+
+                        <div class="control-grid">
+                            <div class="field-grid">
+                                <label class="field-label" for="upscale"
+                                    >Upscale</label
+                                >
+                                <select id="upscale">
+                                    <option value="1">1x</option>
+                                    <option value="2" selected>2x</option>
+                                    <option value="3">3x</option>
+                                    <option value="4">4x</option>
+                                </select>
+                            </div>
+
+                            <div class="field-grid">
+                                <div class="range-head">
+                                    <label class="field-label" for="fidelity"
+                                        >Fidelity</label
+                                    >
+                                    <span id="fidelityValue" class="range-value"
+                                        >0.20</span
+                                    >
+                                </div>
+                                <input
+                                    id="fidelity"
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.05"
+                                    value="0.2"
+                                />
+                            </div>
                         </div>
-                    </article>
 
-                    <article class="image-slot result-slot">
-                        <header class="slot-header">
-                            <span>Result</span>
-                            <a
-                                id="downloadLink"
-                                class="download-link"
-                                href="#"
-                                download="restored.png"
-                                hidden
+                        <div class="toggle-row">
+                            <label class="toggle">
+                                <span>Face upsample</span>
+                                <input
+                                    id="faceUpsample"
+                                    type="checkbox"
+                                    checked
+                                />
+                                <span class="switch" aria-hidden="true"></span>
+                            </label>
+                            <label class="toggle">
+                                <span>Background enhance</span>
+                                <input
+                                    id="backgroundEnhance"
+                                    type="checkbox"
+                                    checked
+                                />
+                                <span class="switch" aria-hidden="true"></span>
+                            </label>
+                        </div>
+
+                        <div class="actions">
+                            <button
+                                id="restoreButton"
+                                class="button primary"
+                                type="button"
+                                disabled
                             >
-                                Download
-                            </a>
-                        </header>
-                        <div id="resultBody" class="slot-body">
-                            <div class="placeholder">Waiting</div>
+                                Restore
+                            </button>
+                            <button
+                                id="clearButton"
+                                class="button secondary"
+                                type="button"
+                                disabled
+                            >
+                                Clear
+                            </button>
                         </div>
-                    </article>
-                </section>
+                    </section>
+                </article>
+
+                <article class="panel image-panel output-panel">
+                    <header class="slot-header">
+                        <span>Output</span>
+                        <a
+                            id="downloadLink"
+                            class="download-link"
+                            href="#"
+                            download="restored.png"
+                            hidden
+                        >
+                            Download
+                        </a>
+                    </header>
+                    <div
+                        id="resultBody"
+                        class="slot-body image-body result-body"
+                    >
+                        <div class="placeholder">Waiting</div>
+                    </div>
+                </article>
             </section>
         </main>
     </body>
