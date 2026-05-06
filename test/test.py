@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-INPUT_IMAGE = PROJECT_ROOT / "pictures" / "test2.jpg"
+INPUT_IMAGE = PROJECT_ROOT / "test" / "pictures" / "test2.jpg"
 OUTPUT_IMAGE = PROJECT_ROOT / "test" / "output" / "output.png"
 
 
