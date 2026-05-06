@@ -2,7 +2,9 @@
     "configurations": [
         {
             "name": "Linux",
-            "includePath": ["${workspaceFolder}/scripts/http_server/include"],
+            "includePath": [
+                "${workspaceFolder}/scripts/http_server/include"
+            ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",
             "cStandard": "c17",

@@ -1,8 +1,9 @@
 extensions/Self-Supervised-photo/*
 extensions/muduo
-extensions/CodeFormer
+extensions/CodeFormer/*
+extensions/
 .env
 .env.*
 test/output/output.png
 __pycache__
-build/
+build/HttpServer/*
