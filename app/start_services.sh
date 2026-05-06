@@ -2,17 +2,52 @@
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PYTHON_BIN="${PYTHON:-python}"
 PYTHON_SERVICE="${APP_DIR}/serving/mosaic.py"
 CPP_SERVICE="${APP_DIR}/mosaic_server"
 
-export MOSAIC_PYTHON_URL="${MOSAIC_PYTHON_URL:-http://127.0.0.1:8091/restore}"
+resolve_python() {
+    local candidate
 
-if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
-    echo "Python executable not found: ${PYTHON_BIN}" >&2
+    if [[ -n "${PYTHON:-}" ]]; then
+        if command -v "${PYTHON}" >/dev/null 2>&1; then
+            command -v "${PYTHON}"
+            return 0
+        fi
+
+        echo "Python executable not found: ${PYTHON}" >&2
+        echo "Set PYTHON=/path/to/python or unset PYTHON to use auto-detection." >&2
+        return 1
+    fi
+
+    local candidates=(
+        "${VIRTUAL_ENV:-}/bin/python"
+        "${VIRTUAL_ENV:-}/bin/python3"
+        "${APP_DIR}/.venv/bin/python"
+        "${APP_DIR}/.venv/bin/python3"
+        "${APP_DIR}/../.venv/bin/python"
+        "${APP_DIR}/../.venv/bin/python3"
+        "${APP_DIR}/../../.venv/bin/python"
+        "${APP_DIR}/../../.venv/bin/python3"
+        python3
+        python
+    )
+
+    for candidate in "${candidates[@]}"; do
+        [[ -n "${candidate}" ]] || continue
+        if command -v "${candidate}" >/dev/null 2>&1; then
+            command -v "${candidate}"
+            return 0
+        fi
+    done
+
+    echo "Python executable not found." >&2
     echo "Set PYTHON=/path/to/python before running this script." >&2
-    exit 1
-fi
+    return 1
+}
+
+PYTHON_BIN="$(resolve_python)"
+
+export MOSAIC_PYTHON_URL="${MOSAIC_PYTHON_URL:-http://127.0.0.1:8091/restore}"
 
 if [[ ! -f "${PYTHON_SERVICE}" ]]; then
     echo "Python service not found: ${PYTHON_SERVICE}" >&2
@@ -48,7 +83,7 @@ trap cleanup EXIT INT TERM
 
 cd "${APP_DIR}"
 
-echo "Starting Python service on http://127.0.0.1:8091"
+echo "Starting Python service on http://127.0.0.1:8091 with ${PYTHON_BIN}"
 "${PYTHON_BIN}" "${PYTHON_SERVICE}" &
 python_pid=$!
 
