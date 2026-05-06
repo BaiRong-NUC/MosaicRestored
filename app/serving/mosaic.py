@@ -71,7 +71,7 @@ def generate_restored_image(
         result = replicate.run(
             MODEL_VERSION,
             input={
-                "image": image_file,
+                "image": Path(image_file.name),
                 "upscale": upscale,
                 "face_upsample": face_upsample,
                 "background_enhance": background_enhance,
