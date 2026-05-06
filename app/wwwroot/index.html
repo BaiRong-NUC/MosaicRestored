@@ -4,418 +4,84 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Mosaic Restored</title>
-        <style>
-            :root {
-                color-scheme: light;
-                --bg: #f6f7f9;
-                --panel: #ffffff;
-                --text: #17202a;
-                --muted: #697586;
-                --line: #d8dee8;
-                --accent: #0f766e;
-                --accent-strong: #0b5d57;
-                --warning: #9a3412;
-                --danger: #b42318;
-                --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-            }
-
-            * {
-                box-sizing: border-box;
-            }
-
-            body {
-                margin: 0;
-                min-height: 100vh;
-                background: var(--bg);
-                color: var(--text);
-                font-family:
-                    Inter,
-                    ui-sans-serif,
-                    system-ui,
-                    -apple-system,
-                    BlinkMacSystemFont,
-                    "Segoe UI",
-                    sans-serif;
-            }
-
-            button,
-            input,
-            select {
-                font: inherit;
-            }
-
-            .shell {
-                width: min(1180px, calc(100vw - 32px));
-                margin: 0 auto;
-                padding: 28px 0 36px;
-            }
-
-            .topbar {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 18px;
-                margin-bottom: 22px;
-            }
-
-            h1 {
-                margin: 0;
-                font-size: 26px;
-                line-height: 1.15;
-                font-weight: 740;
-                letter-spacing: 0;
-            }
-
-            .status {
-                min-height: 24px;
-                color: var(--muted);
-                font-size: 14px;
-                text-align: right;
-            }
-
-            .workspace {
-                display: grid;
-                grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
-                gap: 18px;
-                align-items: start;
-            }
-
-            .panel {
-                background: var(--panel);
-                border: 1px solid var(--line);
-                border-radius: 8px;
-                box-shadow: var(--shadow);
-            }
-
-            .controls {
-                padding: 18px;
-            }
-
-            .dropzone {
-                display: grid;
-                place-items: center;
-                min-height: 178px;
-                border: 1px dashed #9aa6b7;
-                border-radius: 8px;
-                background: #fbfcfd;
-                color: var(--muted);
-                cursor: pointer;
-                text-align: center;
-                padding: 18px;
-                transition:
-                    border-color 160ms ease,
-                    background 160ms ease;
-            }
-
-            .dropzone:hover,
-            .dropzone.dragover {
-                border-color: var(--accent);
-                background: #eefaf8;
-            }
-
-            .dropzone strong {
-                display: block;
-                color: var(--text);
-                font-size: 16px;
-                margin-bottom: 6px;
-            }
-
-            .file-meta {
-                margin: 12px 0 0;
-                color: var(--muted);
-                font-size: 13px;
-                min-height: 19px;
-                overflow-wrap: anywhere;
-            }
-
-            .field-grid {
-                display: grid;
-                gap: 14px;
-                margin-top: 18px;
-            }
-
-            label {
-                display: grid;
-                gap: 8px;
-                color: #344054;
-                font-size: 13px;
-                font-weight: 650;
-            }
-
-            select,
-            input[type="range"] {
-                width: 100%;
-            }
-
-            select {
-                height: 38px;
-                border: 1px solid var(--line);
-                border-radius: 6px;
-                background: #fff;
-                color: var(--text);
-                padding: 0 10px;
-            }
-
-            .range-row {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) 48px;
-                gap: 10px;
-                align-items: center;
-            }
-
-            .range-value {
-                color: var(--text);
-                font-variant-numeric: tabular-nums;
-                text-align: right;
-            }
-
-            .toggle-row {
-                display: grid;
-                gap: 10px;
-                margin-top: 4px;
-            }
-
-            .toggle {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                border: 1px solid var(--line);
-                border-radius: 6px;
-                padding: 10px 12px;
-                color: var(--text);
-                font-size: 14px;
-                font-weight: 600;
-            }
-
-            .toggle input {
-                width: 18px;
-                height: 18px;
-                accent-color: var(--accent);
-            }
-
-            .actions {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-                margin-top: 18px;
-            }
-
-            .button {
-                height: 42px;
-                border: 1px solid transparent;
-                border-radius: 6px;
-                cursor: pointer;
-                font-weight: 720;
-                transition:
-                    transform 120ms ease,
-                    background 120ms ease,
-                    border-color 120ms ease;
-            }
-
-            .button:active {
-                transform: translateY(1px);
-            }
-
-            .button:disabled {
-                cursor: not-allowed;
-                opacity: 0.58;
-            }
-
-            .primary {
-                background: var(--accent);
-                color: #fff;
-            }
-
-            .primary:hover:not(:disabled) {
-                background: var(--accent-strong);
-            }
-
-            .secondary {
-                background: #fff;
-                border-color: var(--line);
-                color: var(--text);
-            }
-
-            .secondary:hover:not(:disabled) {
-                border-color: #a4adbb;
-            }
-
-            .viewer {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                min-height: 560px;
-                overflow: hidden;
-            }
-
-            .image-slot {
-                display: grid;
-                grid-template-rows: auto minmax(260px, 1fr);
-                border-left: 1px solid var(--line);
-            }
-
-            .image-slot:first-child {
-                border-left: 0;
-            }
-
-            .slot-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                min-height: 54px;
-                padding: 0 16px;
-                border-bottom: 1px solid var(--line);
-                color: #344054;
-                font-weight: 720;
-            }
-
-            .slot-header a {
-                color: var(--accent);
-                text-decoration: none;
-                font-size: 13px;
-                font-weight: 720;
-            }
-
-            .slot-body {
-                display: grid;
-                place-items: center;
-                background: #fdfefe;
-                padding: 14px;
-                position: relative;
-            }
-
-            .slot-body img {
-                max-width: 100%;
-                max-height: 520px;
-                object-fit: contain;
-                border-radius: 6px;
-                border: 1px solid #e7ebf1;
-                background: #fff;
-            }
-
-            .placeholder {
-                color: var(--muted);
-                font-size: 14px;
-                text-align: center;
-            }
-
-            .busy::after {
-                content: "";
-                position: absolute;
-                width: 34px;
-                height: 34px;
-                border: 3px solid #d0d5dd;
-                border-top-color: var(--accent);
-                border-radius: 50%;
-                animation: spin 800ms linear infinite;
-            }
-
-            .error {
-                color: var(--danger);
-            }
-
-            .warning {
-                color: var(--warning);
-            }
-
-            @keyframes spin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-
-            @media (max-width: 860px) {
-                .topbar {
-                    align-items: flex-start;
-                    flex-direction: column;
-                }
-
-                .status {
-                    text-align: left;
-                }
-
-                .workspace,
-                .viewer {
-                    grid-template-columns: 1fr;
-                }
-
-                .image-slot {
-                    border-left: 0;
-                    border-top: 1px solid var(--line);
-                }
-
-                .image-slot:first-child {
-                    border-top: 0;
-                }
-            }
-        </style>
+        <link rel="stylesheet" href="./css/styles.css" />
+        <script src="./js/app.js" defer></script>
     </head>
     <body>
         <main class="shell">
-            <div class="topbar">
-                <h1>Mosaic Restored</h1>
-                <div id="status" class="status">Ready</div>
-            </div>
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">Image restoration</p>
+                    <h1>Mosaic Restored</h1>
+                </div>
+                <div
+                    id="status"
+                    class="status"
+                    role="status"
+                    aria-live="polite"
+                >
+                    Ready
+                </div>
+            </header>
 
             <section class="workspace">
-                <aside class="panel controls">
+                <aside class="panel controls" aria-label="Restore controls">
                     <input id="fileInput" type="file" accept="image/*" hidden />
-                    <div
+
+                    <button
                         id="dropzone"
                         class="dropzone"
-                        tabindex="0"
-                        role="button"
+                        type="button"
                         aria-label="Choose image"
                     >
-                        <div>
-                            <strong>Choose image</strong>
-                            <span>Drop or browse</span>
-                        </div>
-                    </div>
+                        <span class="drop-mark" aria-hidden="true"></span>
+                        <span class="drop-title">Choose image</span>
+                        <span class="drop-copy">Drop or browse</span>
+                    </button>
+
                     <p id="fileMeta" class="file-meta"></p>
 
                     <div class="field-grid">
-                        <label>
-                            Upscale
-                            <select id="upscale">
-                                <option value="1">1x</option>
-                                <option value="2" selected>2x</option>
-                                <option value="3">3x</option>
-                                <option value="4">4x</option>
-                            </select>
-                        </label>
+                        <label class="field-label" for="upscale">Upscale</label>
+                        <select id="upscale">
+                            <option value="1">1x</option>
+                            <option value="2" selected>2x</option>
+                            <option value="3">3x</option>
+                            <option value="4">4x</option>
+                        </select>
 
-                        <label>
-                            Fidelity
-                            <div class="range-row">
-                                <input
-                                    id="fidelity"
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.05"
-                                    value="0.2"
-                                />
-                                <span id="fidelityValue" class="range-value"
-                                    >0.20</span
-                                >
-                            </div>
-                        </label>
+                        <div class="range-head">
+                            <label class="field-label" for="fidelity"
+                                >Fidelity</label
+                            >
+                            <span id="fidelityValue" class="range-value"
+                                >0.20</span
+                            >
+                        </div>
+                        <input
+                            id="fidelity"
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value="0.2"
+                        />
                     </div>
 
                     <div class="toggle-row">
                         <label class="toggle">
-                            Face upsample
+                            <span>Face upsample</span>
                             <input id="faceUpsample" type="checkbox" checked />
+                            <span class="switch" aria-hidden="true"></span>
                         </label>
                         <label class="toggle">
-                            Background enhance
+                            <span>Background enhance</span>
                             <input
                                 id="backgroundEnhance"
                                 type="checkbox"
                                 checked
                             />
+                            <span class="switch" aria-hidden="true"></span>
                         </label>
                     </div>
 
@@ -423,6 +89,7 @@
                         <button
                             id="restoreButton"
                             class="button primary"
+                            type="button"
                             disabled
                         >
                             Restore
@@ -430,6 +97,7 @@
                         <button
                             id="clearButton"
                             class="button secondary"
+                            type="button"
                             disabled
                         >
                             Clear
@@ -437,23 +105,28 @@
                     </div>
                 </aside>
 
-                <section class="panel viewer" aria-live="polite">
+                <section class="panel viewer" aria-label="Image preview">
                     <article class="image-slot">
-                        <header class="slot-header">Input</header>
+                        <header class="slot-header">
+                            <span>Input</span>
+                        </header>
                         <div id="inputBody" class="slot-body">
                             <div class="placeholder">No image selected</div>
                         </div>
                     </article>
-                    <article class="image-slot">
+
+                    <article class="image-slot result-slot">
                         <header class="slot-header">
                             <span>Result</span>
                             <a
                                 id="downloadLink"
+                                class="download-link"
                                 href="#"
                                 download="restored.png"
                                 hidden
-                                >Download</a
                             >
+                                Download
+                            </a>
                         </header>
                         <div id="resultBody" class="slot-body">
                             <div class="placeholder">Waiting</div>
@@ -462,185 +135,5 @@
                 </section>
             </section>
         </main>
-
-        <script>
-            const fileInput = document.querySelector("#fileInput");
-            const dropzone = document.querySelector("#dropzone");
-            const fileMeta = document.querySelector("#fileMeta");
-            const inputBody = document.querySelector("#inputBody");
-            const resultBody = document.querySelector("#resultBody");
-            const restoreButton = document.querySelector("#restoreButton");
-            const clearButton = document.querySelector("#clearButton");
-            const statusText = document.querySelector("#status");
-            const downloadLink = document.querySelector("#downloadLink");
-            const fidelity = document.querySelector("#fidelity");
-            const fidelityValue = document.querySelector("#fidelityValue");
-            const upscale = document.querySelector("#upscale");
-            const faceUpsample = document.querySelector("#faceUpsample");
-            const backgroundEnhance =
-                document.querySelector("#backgroundEnhance");
-
-            let selectedFile = null;
-            let inputUrl = null;
-            let resultUrl = null;
-
-            function setStatus(message, tone = "") {
-                statusText.textContent = message;
-                statusText.className = `status ${tone}`.trim();
-            }
-
-            function revokeUrl(url) {
-                if (url) URL.revokeObjectURL(url);
-            }
-
-            function showImage(container, url, alt) {
-                container.classList.remove("busy");
-                container.innerHTML = "";
-                const image = document.createElement("img");
-                image.src = url;
-                image.alt = alt;
-                container.appendChild(image);
-            }
-
-            function showPlaceholder(container, text) {
-                container.classList.remove("busy");
-                container.innerHTML = `<div class="placeholder">${text}</div>`;
-            }
-
-            function formatSize(bytes) {
-                if (bytes < 1024 * 1024)
-                    return `${(bytes / 1024).toFixed(1)} KB`;
-                return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-            }
-
-            function setSelectedFile(file) {
-                if (!file || !file.type.startsWith("image/")) {
-                    setStatus("Please choose an image file", "warning");
-                    return;
-                }
-
-                revokeUrl(inputUrl);
-                revokeUrl(resultUrl);
-                selectedFile = file;
-                inputUrl = URL.createObjectURL(file);
-                resultUrl = null;
-
-                showImage(inputBody, inputUrl, "Input image");
-                showPlaceholder(resultBody, "Waiting");
-                fileMeta.textContent = `${file.name} · ${formatSize(file.size)}`;
-                restoreButton.disabled = false;
-                clearButton.disabled = false;
-                downloadLink.hidden = true;
-                downloadLink.removeAttribute("href");
-                setStatus("Ready");
-            }
-
-            function clearAll() {
-                revokeUrl(inputUrl);
-                revokeUrl(resultUrl);
-                selectedFile = null;
-                inputUrl = null;
-                resultUrl = null;
-                fileInput.value = "";
-                fileMeta.textContent = "";
-                restoreButton.disabled = true;
-                clearButton.disabled = true;
-                downloadLink.hidden = true;
-                downloadLink.removeAttribute("href");
-                showPlaceholder(inputBody, "No image selected");
-                showPlaceholder(resultBody, "Waiting");
-                setStatus("Ready");
-            }
-
-            async function restoreImage() {
-                if (!selectedFile) return;
-
-                const params = new URLSearchParams({
-                    upscale: upscale.value,
-                    face_upsample: String(faceUpsample.checked),
-                    background_enhance: String(backgroundEnhance.checked),
-                    codeformer_fidelity: fidelity.value,
-                });
-
-                restoreButton.disabled = true;
-                resultBody.innerHTML = "";
-                resultBody.classList.add("busy");
-                downloadLink.hidden = true;
-                setStatus("Restoring...");
-
-                try {
-                    const response = await fetch(
-                        `/api/restore?${params.toString()}`,
-                        {
-                            method: "POST",
-                            headers: {
-                                "Content-Type":
-                                    selectedFile.type ||
-                                    "application/octet-stream",
-                            },
-                            body: await selectedFile.arrayBuffer(),
-                        },
-                    );
-
-                    const contentType =
-                        response.headers.get("Content-Type") || "";
-                    if (!response.ok) {
-                        let message = `Restore failed (${response.status})`;
-                        if (contentType.includes("application/json")) {
-                            const payload = await response.json();
-                            if (payload.detail) message = payload.detail;
-                        } else {
-                            const text = await response.text();
-                            if (text) message = text;
-                        }
-                        throw new Error(message);
-                    }
-
-                    const blob = await response.blob();
-                    revokeUrl(resultUrl);
-                    resultUrl = URL.createObjectURL(blob);
-                    showImage(resultBody, resultUrl, "Restored image");
-                    downloadLink.href = resultUrl;
-                    downloadLink.hidden = false;
-                    setStatus("Complete");
-                } catch (error) {
-                    showPlaceholder(
-                        resultBody,
-                        error.message || "Restore failed",
-                    );
-                    setStatus("Restore failed", "error");
-                } finally {
-                    restoreButton.disabled = !selectedFile;
-                }
-            }
-
-            dropzone.addEventListener("click", () => fileInput.click());
-            dropzone.addEventListener("keydown", (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    fileInput.click();
-                }
-            });
-            dropzone.addEventListener("dragover", (event) => {
-                event.preventDefault();
-                dropzone.classList.add("dragover");
-            });
-            dropzone.addEventListener("dragleave", () =>
-                dropzone.classList.remove("dragover"),
-            );
-            dropzone.addEventListener("drop", (event) => {
-                event.preventDefault();
-                dropzone.classList.remove("dragover");
-                setSelectedFile(event.dataTransfer.files[0]);
-            });
-            fileInput.addEventListener("change", () =>
-                setSelectedFile(fileInput.files[0]),
-            );
-            restoreButton.addEventListener("click", restoreImage);
-            clearButton.addEventListener("click", clearAll);
-            fidelity.addEventListener("input", () => {
-                fidelityValue.textContent = Number(fidelity.value).toFixed(2);
-            });
-        </script>
     </body>
 </html>

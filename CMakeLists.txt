@@ -35,9 +35,13 @@ set_target_properties(mosaic_server PROPERTIES
 )
 
 add_custom_target(copy_runtime_assets ALL
+    COMMAND ${CMAKE_COMMAND} -E remove_directory
+        $<TARGET_FILE_DIR:mosaic_server>/wwwroot
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_CURRENT_SOURCE_DIR}/app/wwwroot
             $<TARGET_FILE_DIR:mosaic_server>/wwwroot
+    COMMAND ${CMAKE_COMMAND} -E remove_directory
+        $<TARGET_FILE_DIR:mosaic_server>/serving
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_CURRENT_SOURCE_DIR}/app/serving
             $<TARGET_FILE_DIR:mosaic_server>/serving
