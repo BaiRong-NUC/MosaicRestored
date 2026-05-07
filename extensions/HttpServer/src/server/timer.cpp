@@ -13,7 +13,8 @@ void TimerTask::Cancel() { this->_isActive = false; }
 bool TimerTask::IsActive() const { return this->_isActive; }
 TimerTask::~TimerTask()
 {
-    if (this->_isActive == true) this->_timer_action();
+    if (this->_isActive == true)
+        this->_timer_action();
     this->_release();
 }
 
@@ -33,10 +34,10 @@ Timer::Timer(EventLoop *eventLoop, size_t wheelSize)
     }
 
     struct itimerspec new_value;
-    new_value.it_value.tv_sec = 1;  // 初始过期时间为1s
+    new_value.it_value.tv_sec = 1; // 初始过期时间为1s
     new_value.it_value.tv_nsec = 0;
 
-    new_value.it_interval.tv_sec = 1;  // 间隔时间为1s
+    new_value.it_interval.tv_sec = 1; // 间隔时间为1s
     new_value.it_interval.tv_nsec = 0;
 
     // TFD_TIMER_ABSTIME: 表示定时器的超时时间是绝对时间;
@@ -50,15 +51,15 @@ Timer::Timer(EventLoop *eventLoop, size_t wheelSize)
     // 定时器就绪事件回调函数
     this->_timerChannel.readAction = [this, timerfd]()
     {
-        uint64_t expirations;  // 超时次数,每次超时向文件描述符中写入8字节数据
+        uint64_t expirations; // 超时次数,每次超时向文件描述符中写入8字节数据
         ssize_t s = read(timerfd, &expirations, sizeof(expirations));
         if (s != sizeof(expirations))
         {
             LOG(ERROR, "Failed to read timerfd");
             exit(EXIT_FAILURE);
         }
-        // 根据超时次数执行定时器任务
-        for (int i = 0; i < s; i++)
+        // 根据 timerfd 累积的超时次数推进时间轮。
+        for (uint64_t i = 0; i < expirations; ++i)
         {
             this->Tick();
         }
@@ -81,7 +82,8 @@ void Timer::Add(uint64_t id, uint64_t expireTime, Action action)
             uint64_t version = ++_taskVersionMap[id];
             uint64_t rounds = (expire - 1) / this->_wheelSize;
             PtrTimerTask timerTask =
-                std::make_shared<TimerTask>(id, expire, action, [this, id, version]() { this->_Remove(id, version); });
+                std::make_shared<TimerTask>(id, expire, action, [this, id, version]()
+                                            { this->_Remove(id, version); });
             _taskMap[id] = timerTask;
             this->_timeWheel[(this->_tick + expire) % this->_wheelSize].push_back(WheelNode{id, version, rounds});
         });

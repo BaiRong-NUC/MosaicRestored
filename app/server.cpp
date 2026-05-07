@@ -10,6 +10,7 @@
 namespace
 {
     const char *DEFAULT_PYTHON_RESTORE_URL = "http://127.0.0.1:8091/restore";
+    constexpr int RESTORE_PROXY_INACTIVE_TIMEOUT = 900;
 
     struct ProxyResult
     {
@@ -217,7 +218,7 @@ int main(int argc, char const *argv[])
     curl_global_init(CURL_GLOBAL_DEFAULT);
     // 获取计算机CPU核心数量,作为从属线程数量
     int thread_num = std::thread::hardware_concurrency();
-    HttpServer server("./wwwroot", 8090, DEFAULT_INACTIVE_TIMEOUT, thread_num);
+    HttpServer server("./wwwroot", 8090, RESTORE_PROXY_INACTIVE_TIMEOUT, thread_num);
     server.Post("^/api/restore$", [](const HttpRequest &request, HttpResponse &response)
                 {
                     if (request.body.empty())
