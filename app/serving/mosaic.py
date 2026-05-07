@@ -5,10 +5,20 @@ import tempfile
 from typing import Any, Protocol, cast
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query, Request, Response, status
+from fastapi import (
+    BackgroundTasks,
+    FastAPI,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 import replicate
 from starlette.concurrency import run_in_threadpool
 import uvicorn
+
+from wechat.user import User
 
 
 SERVICE_DIR = Path(__file__).resolve().parent
@@ -39,6 +49,13 @@ def load_service_env() -> None:
     load_dotenv(SERVICE_DIR / ".env")
 
 
+def env_flag_enabled(name: str, default: bool = True) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() not in {"0", "false", "no", "off"}
+
+
 def ensure_replicate_token() -> None:
     if not os.environ.get("REPLICATE_API_TOKEN"):
         raise RuntimeError("Missing REPLICATE_API_TOKEN in app/serving/.env")
@@ -52,6 +69,26 @@ def image_suffix(image_bytes: bytes) -> str:
     if image_bytes.startswith(b"RIFF") and image_bytes[8:12] == b"WEBP":
         return ".webp"
     return ".img"
+
+
+def send_restore_done_notification(output_url: str) -> None:
+    if not env_flag_enabled("WECHAT_NOTIFY_ENABLED"):
+        return
+
+    content = os.environ.get(
+        "WECHAT_RESTORE_DONE_MESSAGE", "图片处理完毕，请回到页面查看结果。"
+    )
+    if output_url and env_flag_enabled("WECHAT_NOTIFY_INCLUDE_URL", default=False):
+        content = f"{content}\n{output_url}"
+
+    try:
+        sent = User().send_message(content)
+    except Exception as error:
+        print(f"Failed to send WeChat restore notification: {error}")
+        return
+
+    if not sent:
+        print("Failed to send WeChat restore notification.")
 
 
 def generate_restored_image(
@@ -92,13 +129,16 @@ def startup() -> None:
 def health() -> dict[str, str]:
     return {
         "status": "ok",
-        "replicate_token": "configured" if os.environ.get("REPLICATE_API_TOKEN") else "missing",
+        "replicate_token": (
+            "configured" if os.environ.get("REPLICATE_API_TOKEN") else "missing"
+        ),
     }
 
 
 @app.post("/restore")
 async def restore(
     request: Request,
+    background_tasks: BackgroundTasks,
     upscale: int = Query(default=2, ge=1, le=4),
     face_upsample: bool = True,
     background_enhance: bool = True,
@@ -134,6 +174,8 @@ async def restore(
     if save:
         OUTPUT_IMAGE.parent.mkdir(parents=True, exist_ok=True)
         OUTPUT_IMAGE.write_bytes(restored_bytes)
+
+    background_tasks.add_task(send_restore_done_notification, output_url)
 
     return Response(
         content=restored_bytes,

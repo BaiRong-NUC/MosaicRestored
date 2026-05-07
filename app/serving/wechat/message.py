@@ -1,7 +1,5 @@
 import json
 import requests
-import os
-from dotenv import load_dotenv
 
 
 # 向用户发送消息
@@ -25,6 +23,7 @@ class Message:
             self.url,
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
             headers={"Content-Type": "application/json; charset=utf-8"},
+            timeout=10,
         )
         result = response.json()
         return result.get("errcode", -1), result.get("errmsg", "")

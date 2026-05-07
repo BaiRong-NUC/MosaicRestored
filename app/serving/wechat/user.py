@@ -1,24 +1,32 @@
-import requests
 import os
+from pathlib import Path
+
+import requests
 from dotenv import load_dotenv
-from app.serving.wechat.message import Message
+from .message import Message
+
+
+SERVICE_DIR = Path(__file__).resolve().parents[1]
 
 
 class TokenInfo:
     # refresh参数用于决定是否强制刷新token，默认为False
     def __init__(self, refresh=False):
-        load_dotenv()
+        load_dotenv(SERVICE_DIR / ".env")
         self.app_id = os.getenv("APP_ID")
         self.app_secret = os.getenv("APP_SECRET")
         self.user_id = os.getenv("USER_ID")
         self.access_token = None
 
-        if refresh:
+        if refresh or not os.getenv("ACCESS_TOKEN"):
             self.refresh_access_token()
         else:
             self.access_token = os.getenv("ACCESS_TOKEN")
 
     def refresh_access_token(self):
+        if not self.app_id or not self.app_secret:
+            raise RuntimeError("Missing APP_ID or APP_SECRET in app/serving/.env")
+
         access_token_url = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={self.app_id}&secret={self.app_secret}"
         result = requests.get(access_token_url, timeout=10).json()
         access_token = result.get("access_token")
@@ -37,6 +45,8 @@ class TokenInfo:
 class User:
     def __init__(self, refresh_token=False):
         self.token_info = TokenInfo(refresh=refresh_token)
+        if not self.token_info.user_id:
+            raise RuntimeError("Missing USER_ID in app/serving/.env")
         self.reset_message()
 
     def reset_message(self):

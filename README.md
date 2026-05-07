@@ -12,6 +12,22 @@
     REPLICATE_API_TOKEN=你的 token
     ```
 
+    如果需要在图片处理完成后发送微信通知，也在同一个文件中配置微信参数：
+
+    ```env
+    APP_ID=你的微信公众号 AppID
+    APP_SECRET=你的微信公众号 AppSecret
+    USER_ID=接收通知的微信用户 OpenID
+    WECHAT_NOTIFY_ENABLED=true
+    WECHAT_RESTORE_DONE_MESSAGE=图片处理完毕，请回到页面查看结果。
+    ```
+
+    `ACCESS_TOKEN` 可以不配置，服务会通过 `APP_ID` 和 `APP_SECRET` 自动获取；如果已经有可用 token，也可以直接配置 `ACCESS_TOKEN`。默认通知只发送完成提示，如果想把 Replicate 输出链接也附在消息中，可以增加：
+
+    ```env
+    WECHAT_NOTIFY_INCLUDE_URL=true
+    ```
+
 2. 编译项目：
 
     ```bash
