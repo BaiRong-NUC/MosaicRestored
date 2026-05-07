@@ -86,12 +86,14 @@ def generate_restored_image(
 @app.on_event("startup")
 def startup() -> None:
     load_service_env()
-    ensure_replicate_token()
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "replicate_token": "configured" if os.environ.get("REPLICATE_API_TOKEN") else "missing",
+    }
 
 
 @app.post("/restore")
