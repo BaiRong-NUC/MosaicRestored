@@ -30,12 +30,68 @@ void Connection::_HandleRead()
         // 将读取到的数据写入输入缓冲区
         this->_in_buffer.Write(buffer, ret);
 
-        // 调用业务处理回调函数
-        if (this->message_callback && this->_in_buffer.GetReadableSize() > 0)
-        {
-            this->message_callback(shared_from_this(), &this->_in_buffer);
-        }
+        this->_RunMessageCallback();
     }
+}
+
+void Connection::_RunMessageCallback(const std::function<void()> &done)
+{
+    if (this->message_callback == nullptr || this->_in_buffer.GetReadableSize() == 0)
+    {
+        if (done)
+        {
+            done();
+        }
+        return;
+    }
+
+    if (this->_business_thread_pool == nullptr || this->_business_thread_pool->Size() == 0)
+    {
+        this->message_callback(shared_from_this(), &this->_in_buffer);
+        if (done)
+        {
+            done();
+        }
+        return;
+    }
+
+    this->_channel.DisableRead();
+    PtrConnection conn = shared_from_this();
+    this->_business_thread_pool->Submit(
+        this->_id,
+        [conn, done]()
+        {
+            try
+            {
+                if (conn->message_callback && conn->_in_buffer.GetReadableSize() > 0)
+                {
+                    conn->message_callback(conn, &conn->_in_buffer);
+                }
+            }
+            catch (const std::exception &error)
+            {
+                LOG(ERROR, "Connection message callback exception: " << error.what());
+                conn->Close();
+            }
+            catch (...)
+            {
+                LOG(ERROR, "Connection message callback unknown exception");
+                conn->Close();
+            }
+
+            conn->_event_loop->RunTask(
+                [conn, done]()
+                {
+                    if (done)
+                    {
+                        done();
+                    }
+                    else if (conn->_state == ConnectState::CONNECTED && conn->_channel.ReadAble() == false)
+                    {
+                        conn->_channel.EnableRead();
+                    }
+                });
+        });
 }
 
 void Connection::_HandleWrite()
@@ -63,7 +119,9 @@ void Connection::_HandleWrite()
             // 连接异常,但输入缓冲区还有数据未处理,调用业务处理回调函数处理剩余数据
             if (this->message_callback)
             {
-                this->message_callback(shared_from_this(), &this->_in_buffer);
+                this->_RunMessageCallback([this]()
+                                          { this->_Release(); });
+                return;
             }
         }
         // this->Close();
@@ -91,7 +149,9 @@ void Connection::_HandleClose()
         // 输入缓冲区还有数据未处理,调用业务处理回调函数处理剩余数据
         if (this->message_callback)
         {
-            this->message_callback(shared_from_this(), &this->_in_buffer);
+            this->_RunMessageCallback([this]()
+                                      { this->_Release(); });
+            return;
         }
     }
     // 没有数据,可以直接真正删除
@@ -142,18 +202,20 @@ void Connection::Established()
 // 释放链接
 void Connection::_Release()
 {
-    if (this->_state == ConnectState::DISCONNECTED) return;
+    if (this->_state == ConnectState::DISCONNECTED)
+        return;
 
     this->_event_loop->RunTask(
         [this]()
         {
-            if (this->_state == ConnectState::DISCONNECTED) return;
+            if (this->_state == ConnectState::DISCONNECTED)
+                return;
 
             // 修改连接状态
             this->_state = ConnectState::DISCONNECTED;
 
             // 移除事件监控
-            this->_channel.Remove();  // 从EventLoop的监控列表中移除当前Channel
+            this->_channel.Remove(); // 从EventLoop的监控列表中移除当前Channel
 
             // 关闭描述符
             this->_channel.GetSocket().Close();
@@ -194,7 +256,7 @@ void Connection::Send(const std::string &message)
             this->_out_buffer.Write(message);
 
             // 启动可写事件监控,当socket可写时会调用_HandleWrite将输出缓冲区的数据发送到socket
-            if (this->_channel.WriteAble() == false)  // 避免重复启动可写事件监控
+            if (this->_channel.WriteAble() == false) // 避免重复启动可写事件监控
             {
                 // 没监控过可写事件
                 this->_channel.EnableWrite();
@@ -207,34 +269,39 @@ void Connection::Close()
     this->_event_loop->RunTask(
         [&]()
         {
-            if (this->_state == ConnectState::DISCONNECTED || this->_state == ConnectState::DISCONNECTING) return;
+            if (this->_state == ConnectState::DISCONNECTED || this->_state == ConnectState::DISCONNECTING)
+                return;
 
             // 修改连接状态
             this->_state = ConnectState::DISCONNECTING;
 
+            auto finish_close = [this]()
+            {
+                // 检查输出缓冲区
+                if (this->_out_buffer.GetReadableSize() > 0)
+                {
+                    // 启动写事件监控,调用_HandleWrite发送数据,当发送数据失败会调用_Release()
+                    if (this->_channel.WriteAble() == false)
+                    {
+                        // 当写事件启动时会一直尝试发送输出缓冲区,_HandleWrite处理完数据后关闭写事件监控
+                        // 当连接为DISCONNECTING状态时,如果输出缓冲区没有数据了就直接调用_Release()真正关闭连接
+                        this->_channel.EnableWrite();
+                    }
+                    return;
+                }
+
+                // 没有数据需要发送,可以直接真正删除了
+                this->_Release();
+            };
+
             // 检查输入缓冲区
             if (this->_in_buffer.GetReadableSize() > 0)
             {
-                if (this->message_callback != nullptr) this->message_callback(shared_from_this(), &this->_in_buffer);
+                this->_RunMessageCallback(finish_close);
+                return;
             }
 
-            // 检查输出缓冲区
-            if (this->_out_buffer.GetReadableSize() > 0)
-            {
-                // 启动写事件监控,调用_HandleWrite发送数据,当发送数据失败会调用_Release()
-                if (this->_channel.WriteAble() == false)
-                {
-                    // 当写事件启动时会一直尝试发送输出缓冲区,_HandleWrite处理完数据后关闭写事件监控
-                    // 当连接为DISCONNECTING状态时,如果输出缓冲区没有数据了就直接调用_Release()真正关闭连接
-                    this->_channel.EnableWrite();
-                }
-            }
-
-            if (this->_out_buffer.GetReadableSize() == 0)
-            {
-                // 没有数据需要发送,可以直接真正删除了
-                this->_Release();
-            }
+            finish_close();
         });
 }
 
@@ -247,7 +314,7 @@ void Connection::SetInactiveRelease(bool enable, int timeout)
             if (enable)
             {
                 // 添加定时器任务,当连接不活跃时自动释放连接,默认10s后到期,也可以自己指定
-                if (this->_event_loop->FindTimerTask(this->_id) == false)  // 避免重复添加定时器任务
+                if (this->_event_loop->FindTimerTask(this->_id) == false) // 避免重复添加定时器任务
                 {
                     this->_event_loop->AddTimerTask(this->_id, timeout, std::bind(&Connection::_Release, this));
                 }
@@ -289,11 +356,12 @@ void Connection::SwitchProtocol(const Any &new_context, const Action &connected_
         });
 }
 
-Connection::Connection(EventLoop *event_loop, uint64_t id, Socket &&sock)
+Connection::Connection(EventLoop *event_loop, uint64_t id, Socket &&sock, TaskThreadPool *business_thread_pool)
     : _id(id),
       _state(ConnectState::CONNECTING),
       _inactive_release(false),
       _event_loop(event_loop),
+      _business_thread_pool(business_thread_pool),
       _channel(event_loop, std::move(sock))
 {
     // 设置套接字回调执行函数
@@ -338,7 +406,8 @@ void Connection::SetContext(const Any &context)
         LOG(ERROR, "SetContext must be called in EventLoop thread");
         exit(EXIT_FAILURE);
     }
-    this->_event_loop->RunTask([&]() { this->_context = context; });
+    this->_event_loop->RunTask([&]()
+                               { this->_context = context; });
 }
 
 std::thread::id Connection::GetLoopThreadId() const { return this->_event_loop->GetThreadId(); }

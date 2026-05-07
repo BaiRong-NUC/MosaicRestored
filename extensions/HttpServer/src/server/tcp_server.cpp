@@ -1,12 +1,14 @@
 #include "server/tcp_server.h"
 
-TcpServer::TcpServer(uint16_t port, int thread_num, bool reseAddr, bool noBlock, const std::string &ip)
+TcpServer::TcpServer(uint16_t port, int thread_num, bool reseAddr, bool noBlock, const std::string &ip,
+                     int business_thread_num)
     : port(port),
       thread_num(thread_num),
       _connection_id(0),
       _timer_id(0),
       _acceptor(&_baseloop, port, reseAddr, noBlock, ip),
       _loop_thread_pool(&_baseloop, thread_num),
+      _business_thread_pool(business_thread_num < 0 ? 0 : static_cast<size_t>(business_thread_num)),
       _inactive_release(false),
       _inactive_timeout(10)
 
@@ -42,9 +44,10 @@ void TcpServer::Run()
 {
     this->_acceptor.new_connection_callback = [this](Socket &&clientSock)
     {
-        EventLoop *loop = this->_loop_thread_pool.GetSubEventLoop();  // 轮询分配EventLoop对象
+        EventLoop *loop = this->_loop_thread_pool.GetSubEventLoop(); // 轮询分配EventLoop对象
         PtrConnection clientConnection =
-            std::make_shared<Connection>(loop, this->_connection_id++, std::move(clientSock));
+            std::make_shared<Connection>(loop, this->_connection_id++, std::move(clientSock),
+                                         &this->_business_thread_pool);
         this->_connections[clientConnection->GetConnectionId()] = clientConnection;
 
         // 关闭连接
@@ -70,13 +73,13 @@ void TcpServer::Run()
                     //                                       << conn << ", Loop thread Id: " <<
                     //                                       conn->GetLoopThreadId());
                     this->_connections.erase(connId);
-                });  // 从连接列表中移除连接对象
+                }); // 从连接列表中移除连接对象
         };
         clientConnection->SetInactiveRelease(this->_inactive_release.load(std::memory_order_relaxed),
                                              this->_inactive_timeout.load(std::memory_order_relaxed));
-        clientConnection->Established();  // 连接就绪初始化,启动可读监控
+        clientConnection->Established(); // 连接就绪初始化,启动可读监控
     };
 
-    this->_acceptor.Listen();  // 启动监听套接字的可读事件监控,当可读时说明有新连接到来
-    this->_baseloop.Start();   // 启动事件循环,监控事件
+    this->_acceptor.Listen(); // 启动监听套接字的可读事件监控,当可读时说明有新连接到来
+    this->_baseloop.Start();  // 启动事件循环,监控事件
 }

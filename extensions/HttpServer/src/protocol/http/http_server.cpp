@@ -2,8 +2,7 @@
 
 HttpServer::HttpServer(const std::string &root, uint16_t port, int timeout, int thread_num, bool reseAddr, bool noBlock,
                        const std::string &ip, int business_thread_num)
-    : _tcp_server(port, thread_num, reseAddr, noBlock, ip),
-      _business_thread_pool(business_thread_num < 0 ? 0 : static_cast<size_t>(business_thread_num)),
+    : _tcp_server(port, thread_num, reseAddr, noBlock, ip, business_thread_num),
       static_root(root)
 {
     // 设置超时时间,单位为秒
@@ -74,52 +73,34 @@ void HttpServer::_OnMessage(const PtrConnection &conn, Buffer *buffer)
             return;
         }
 
-        HttpRequest client_request = context->GetRequest();
-        int response_status = context->GetResponseStatus();
+        HttpRequest &client_request = context->GetRequest();
+        HttpResponse server_response(context->GetResponseStatus());
+
+        try
+        {
+            this->_HandleRequest(conn, client_request, server_response);
+        }
+        catch (const std::exception &error)
+        {
+            LOG(ERROR, "HTTP handler exception: " << error.what());
+            server_response = this->_GetErrorResponse(500);
+        }
+        catch (...)
+        {
+            LOG(ERROR, "HTTP handler unknown exception");
+            server_response = this->_GetErrorResponse(500);
+        }
+        this->SendResponse(conn, client_request, server_response);
+
         bool keep_alive = client_request.IsKeepAlive();
-
         context->Reset();
-
-        this->_DispatchRequest(conn, std::move(client_request), response_status);
 
         if (keep_alive == false)
         {
+            conn->Close();
             return;
         }
     }
-}
-
-void HttpServer::_DispatchRequest(const PtrConnection &conn, HttpRequest request, int response_status)
-{
-    uint64_t connection_id = conn->GetConnectionId();
-    this->_business_thread_pool.Submit(
-        connection_id,
-        [this, conn, request = std::move(request), response_status]() mutable
-        {
-            bool keep_alive = request.IsKeepAlive();
-            HttpResponse server_response(response_status);
-
-            try
-            {
-                this->_HandleRequest(conn, request, server_response);
-            }
-            catch (const std::exception &error)
-            {
-                LOG(ERROR, "HTTP handler exception: " << error.what());
-                server_response = this->_GetErrorResponse(500);
-            }
-            catch (...)
-            {
-                LOG(ERROR, "HTTP handler unknown exception");
-                server_response = this->_GetErrorResponse(500);
-            }
-            this->SendResponse(conn, request, server_response);
-
-            if (keep_alive == false)
-            {
-                conn->Close();
-            }
-        });
 }
 
 void HttpServer::SendResponse(const PtrConnection &conn, const HttpRequest &client_request,
