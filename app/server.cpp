@@ -216,9 +216,15 @@ int main(int argc, char const *argv[])
 {
     SetLogLevel(WARNING);
     curl_global_init(CURL_GLOBAL_DEFAULT);
-    // 获取计算机CPU核心数量,作为从属线程数量
-    int thread_num = std::thread::hardware_concurrency();
-    HttpServer server("./wwwroot", 8090, RESTORE_PROXY_INACTIVE_TIMEOUT, thread_num);
+    int cpu_count = static_cast<int>(std::thread::hardware_concurrency());
+    if (cpu_count <= 0)
+    {
+        cpu_count = 4;
+    }
+    int reactor_thread_num = std::max(1, cpu_count / 2);
+    int business_thread_num = std::max(1, cpu_count - reactor_thread_num);
+    HttpServer server("./wwwroot", 8090, RESTORE_PROXY_INACTIVE_TIMEOUT, reactor_thread_num, true, true, "0.0.0.0",
+                      business_thread_num);
     server.Post("^/api/restore$", [](const HttpRequest &request, HttpResponse &response)
                 {
                     if (request.body.empty())

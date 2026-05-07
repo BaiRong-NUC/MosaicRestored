@@ -25,3 +25,5 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <regex>
+#include <memory>
+#include <exception>
