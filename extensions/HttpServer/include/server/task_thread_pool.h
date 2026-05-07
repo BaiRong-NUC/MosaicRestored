@@ -32,3 +32,4 @@ public:
     void Submit(Task task);
     void Submit(uint64_t key, Task task);
 };
+

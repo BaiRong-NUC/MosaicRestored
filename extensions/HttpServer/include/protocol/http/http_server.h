@@ -3,7 +3,6 @@
 #include <utils/utils.h>
 #include <protocol/http/http_context.h>
 #include <server/tcp_server.h>
-#include <server/task_thread_pool.h>
 #include <protocol/http/html/http_error_html.h>
 
 /**
@@ -38,10 +37,8 @@ private:
     // 方法到路由映射表的映射表,方便根据方法查找对应的路由映射表
     std::unordered_map<std::string, std::vector<RouteHandler>> _method_handlers;
     TcpServer _tcp_server;                                      // TCP服務器
-    TaskThreadPool _business_thread_pool;                       // 业务线程池,处理HTTP路由和静态资源读取
     void _OnMessage(const PtrConnection &conn, Buffer *buffer); // 處理請求數據的回調函數
     void _OnConnected(const PtrConnection &conn);               // 設置tcp上下文
-    void _DispatchRequest(const PtrConnection &conn, HttpRequest request, int response_status);
     // 處理請求的函數,根據請求路由查找對應的處理函數,調用函數處理請求,得到響應內容和狀態碼,設置HttpResponse對象
     void _HandleRequest(const PtrConnection &conn, HttpRequest &request, HttpResponse &response);
     // 查找处理函数
