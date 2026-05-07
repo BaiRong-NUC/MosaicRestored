@@ -46,8 +46,8 @@ add_custom_target(copy_runtime_assets ALL
             ${CMAKE_CURRENT_SOURCE_DIR}/app/serving
             $<TARGET_FILE_DIR:mosaic_server>/serving
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/app/start_services.sh
-            $<TARGET_FILE_DIR:mosaic_server>/start_services.sh
-    COMMAND chmod +x $<TARGET_FILE_DIR:mosaic_server>/start_services.sh
+            ${CMAKE_CURRENT_SOURCE_DIR}/app/loop.sh
+            $<TARGET_FILE_DIR:mosaic_server>/loop
+    COMMAND chmod +x $<TARGET_FILE_DIR:mosaic_server>/loop
 )
 add_dependencies(copy_runtime_assets mosaic_server)
