@@ -22,10 +22,16 @@
     WECHAT_RESTORE_DONE_MESSAGE=图片处理完毕，请回到页面查看结果。
     ```
 
-    `ACCESS_TOKEN` 可以不配置，服务会通过 `APP_ID` 和 `APP_SECRET` 自动获取；如果已经有可用 token，也可以直接配置 `ACCESS_TOKEN`。默认通知只发送完成提示，如果想把 Replicate 输出链接也附在消息中，可以增加：
+    `ACCESS_TOKEN` 可以不配置，服务会通过 `APP_ID` 和 `APP_SECRET` 自动获取；如果已经有可用 token，也可以直接配置 `ACCESS_TOKEN`。默认通知只发送完成提示，如果想把你自己服务器上的结果图链接也附在消息中，可以增加：
 
     ```env
     WECHAT_NOTIFY_INCLUDE_URL=true
+    ```
+
+    服务会把结果图保存到站点静态目录下，并优先根据当前访问域名生成链接；如果部署在反向代理后且需要强制指定外部访问地址，也可以配置：
+
+    ```env
+    MOSAIC_PUBLIC_BASE_URL=https://你的域名
     ```
 
 2. 编译项目：

@@ -4,5 +4,6 @@ extensions/CodeFormer/*
 .env
 .env.*
 test/output/output.png
+app/wwwroot/output/
 __pycache__
 build/*

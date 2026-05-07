@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import tempfile
 from typing import Any, Protocol, cast
+from uuid import uuid4
 
 from dotenv import load_dotenv
 from fastapi import (
@@ -24,6 +25,7 @@ from wechat.user import User
 SERVICE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_IMAGE = PROJECT_ROOT / "test" / "output" / "output.png"
+PUBLIC_OUTPUT_DIR = PROJECT_ROOT / "app" / "wwwroot" / "output"
 MODEL_VERSION = (
     "sczhou/codeformer:7de2ea26c616d5bf2245ad0d5e24f0ff9a6204578a5c876db53142edd9d2cd56"
 )
@@ -89,6 +91,28 @@ def send_restore_done_notification(output_url: str) -> None:
 
     if not sent:
         print("Failed to send WeChat restore notification.")
+
+
+def public_base_url(request: Request) -> str:
+    configured_base_url = os.environ.get("MOSAIC_PUBLIC_BASE_URL")
+    if configured_base_url:
+        return configured_base_url.rstrip("/")
+
+    forwarded_host = request.headers.get("x-forwarded-host")
+    if forwarded_host:
+        forwarded_proto = request.headers.get("x-forwarded-proto", "http")
+        return f"{forwarded_proto}://{forwarded_host}".rstrip("/")
+
+    return str(request.base_url).rstrip("/")
+
+
+def save_public_output_image(restored_bytes: bytes) -> str:
+    PUBLIC_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    filename = f"restored-{uuid4().hex}{image_suffix(restored_bytes)}"
+    output_path = PUBLIC_OUTPUT_DIR / filename
+    output_path.write_bytes(restored_bytes)
+    return f"/output/{filename}"
 
 
 def generate_restored_image(
@@ -175,12 +199,23 @@ async def restore(
         OUTPUT_IMAGE.parent.mkdir(parents=True, exist_ok=True)
         OUTPUT_IMAGE.write_bytes(restored_bytes)
 
-    background_tasks.add_task(send_restore_done_notification, output_url)
+    notification_url = output_url
+    if env_flag_enabled("WECHAT_NOTIFY_INCLUDE_URL", default=False):
+        try:
+            public_path = save_public_output_image(restored_bytes)
+            notification_url = f"{public_base_url(request)}{public_path}"
+        except Exception as error:
+            print(f"Failed to save public output image: {error}")
+
+    background_tasks.add_task(send_restore_done_notification, notification_url)
 
     return Response(
         content=restored_bytes,
         media_type="image/png",
-        headers={"X-Replicate-Output-Url": output_url},
+        headers={
+            "X-Output-Url": notification_url,
+            "X-Replicate-Output-Url": output_url,
+        },
     )
 
 

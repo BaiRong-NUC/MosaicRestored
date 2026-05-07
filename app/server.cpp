@@ -184,6 +184,30 @@ namespace
         headers = curl_slist_append(headers, "Accept: image/png, application/json");
         headers = curl_slist_append(headers, "Expect:");
 
+        std::string forwarded_host = request.GetHeader("X-Forwarded-Host");
+        if (forwarded_host.empty())
+        {
+            forwarded_host = request.GetHeader("Host");
+        }
+        std::string forwarded_proto = request.GetHeader("X-Forwarded-Proto");
+        if (forwarded_proto.empty())
+        {
+            forwarded_proto = "http";
+        }
+
+        std::string forwarded_host_header;
+        std::string forwarded_proto_header;
+        if (!forwarded_host.empty())
+        {
+            forwarded_host_header = "X-Forwarded-Host: " + forwarded_host;
+            headers = curl_slist_append(headers, forwarded_host_header.c_str());
+        }
+        if (!forwarded_proto.empty())
+        {
+            forwarded_proto_header = "X-Forwarded-Proto: " + forwarded_proto;
+            headers = curl_slist_append(headers, forwarded_proto_header.c_str());
+        }
+
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request.body.data());
@@ -249,6 +273,10 @@ int main(int argc, char const *argv[])
                     response.status_code = proxy_result.status_code > 0 ? static_cast<int>(proxy_result.status_code) : 502;
                     std::string content_type = proxy_result.content_type.empty() ? "application/octet-stream" : proxy_result.content_type;
                     response.SetBody(proxy_result.body, content_type);
+                    if (!proxy_result.output_url.empty())
+                    {
+                        response.SetHeader("X-Output-Url", proxy_result.output_url);
+                    }
                     if (!proxy_result.output_url.empty())
                     {
                         response.SetHeader("X-Replicate-Output-Url", proxy_result.output_url);
