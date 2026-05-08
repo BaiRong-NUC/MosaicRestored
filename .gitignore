@@ -7,3 +7,4 @@ test/output/output.png
 app/wwwroot/output/
 __pycache__
 build/*
+*.pptx
